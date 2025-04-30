@@ -1,0 +1,1 @@
+Developed a real-time monitoring system to read temperature and humidity data from a DHT11 sensor and display it on a 16x2 LCD screen using Verilog HDL on an FPGA platform. The project aimed to practice HDL design, hardware interfacing, and real-time data visualization on embedded displays.

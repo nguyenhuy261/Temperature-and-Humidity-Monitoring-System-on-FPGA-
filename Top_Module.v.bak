@@ -1,0 +1,51 @@
+	module Top_Module (
+    input wire clk,
+    input wire reset,
+    inout wire dht_data,
+    output wire [7:0] lcd_db,
+    output wire lcd_rs,
+    output wire lcd_e,
+    output wire led0,
+    output wire led1,
+    output wire led2,
+    output wire led3,
+    output wire led4,
+    output wire led5,
+    output wire led6
+);			
+
+    wire [7:0] temperature;
+    wire [7:0] humidity;
+    wire data_valid;
+    wire dht_debug;
+
+    DHT11_Controller dht_inst (
+        .clk(clk),
+        .reset(reset),
+        .dht_data(dht_data),
+        .temperature(temperature),
+        .humidity(humidity),
+        .data_valid(data_valid),
+        .dht_debug(dht_debug)
+    );
+
+    LCD_Controller lcd_inst (
+        .clk(clk),
+        .reset(reset),
+        .temperature(temperature),
+        .humidity(humidity),
+        .lcd_rs(lcd_rs),
+        .lcd_e(lcd_e),
+        .lcd_db(lcd_db)
+    );
+
+    // **LED Debug**
+    assign led0 = data_valid;     // LED0 sáng khi có dữ liệu hợp lệ từ DHT11
+    assign led1 = lcd_e;          // LED1 sáng khi LCD đang nhận dữ liệu
+    assign led2 = (temperature > 10) ? 1 : 0;  // LED2 sáng nếu nhiệt độ > 10°C
+    assign led3 = (humidity > 10) ? 1 : 0;    // LED3 sáng nếu độ ẩm > 10%
+    assign led4 = dht_debug;  // LED4 sáng nếu FPGA nhận phản hồi từ DHT11
+    assign led5 = dht_data;   // LED5 sáng nếu DHT11 giữ mức cao
+    assign led6 = (dht_data == 0) ? 1 : 0;  // LED6 sáng khi DHT11 gửi mức thấp
+
+endmodule

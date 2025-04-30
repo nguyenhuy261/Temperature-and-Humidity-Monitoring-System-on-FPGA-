@@ -1,0 +1,68 @@
+module DHT11_Controller (
+    input wire clk,
+    input wire reset,
+    inout wire dht_data,
+    output reg [7:0] temperature,
+    output reg [7:0] humidity,
+    output reg data_valid,
+    output reg dht_debug
+);
+
+    reg [5:0] state = 0;
+    reg [39:0] dht_buffer;
+    reg [5:0] bit_index = 0;
+    reg [23:0] counter = 0;
+    reg dht_data_reg;
+    
+    assign dht_data = (state == 1) ? 1'b0 : 1'bz; // Kéo xuống thấp để kích hoạt DHT11
+
+    always @(posedge clk or posedge reset) begin
+        if (reset) begin
+            state <= 0;
+            data_valid <= 0;
+            bit_index <= 0;
+            temperature <= 0;
+            humidity <= 0;
+            dht_debug <= 0;
+            dht_data_reg <= 1;
+        end else begin
+            case (state)
+                0: begin  
+                    data_valid <= 0;
+                    counter <= 0;
+                    state <= 1;
+                end
+                1: begin  
+                    if (counter < 1800000) counter <= counter + 1; // Giữ mức thấp 18ms
+                    else state <= 2;
+                end
+                2: begin  
+                    if (dht_data == 0) begin
+                        dht_debug <= 1; // FPGA nhận phản hồi từ DHT11
+                        state <= 3;
+                        counter <= 0;
+                    end
+                end
+                3: begin  
+                    if (counter < 80000) counter <= counter + 1; // Đợi 80us
+                    else state <= 4;
+                end
+                4: begin  
+                    if (bit_index < 40) begin
+                        dht_data_reg <= dht_data; // Ghi dữ liệu từ DHT11
+                        dht_buffer[39 - bit_index] <= dht_data_reg;
+                        bit_index <= bit_index + 1;
+                    end else begin
+                        state <= 5;
+                    end
+                end
+                5: begin  
+                    humidity <= dht_buffer[39:32];
+                    temperature <= dht_buffer[23:16];
+                    data_valid <= 1;
+                    state <= 0;
+                end
+            endcase
+        end
+    end
+endmodule
